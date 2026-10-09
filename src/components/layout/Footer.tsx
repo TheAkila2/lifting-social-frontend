@@ -136,6 +136,17 @@ export default function Footer() {
                     </Link>
                   </li>
                 ))}
+                <li>
+                  <a
+                    href="https://admin.theliftingsocial.com/login"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-zinc-400 hover:text-white transition-colors duration-200 inline-flex items-center group"
+                  >
+                    <span>WL System Admin Login</span>
+                    <ArrowRight className="w-3 h-3 ml-1.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
+                  </a>
+                </li>
               </ul>
             </div>
 

@@ -308,44 +308,36 @@ export default function LiveScoreboard({ eventId, showControls = false }: LiveSc
     }
   };
 
+  // Same tile look (color + spacing, no border) as WL-System's live Scoreboard
+  // screen: a colored rounded tile with a small margin, not a full-bleed
+  // table-cell background — this is the one piece of styling that has to
+  // match exactly for the site to read as "the same scoreboard."
   const renderAttempt = (weight: number | null, result: string | null, isDq = false) => {
     const normalized = (result || '').toLowerCase().trim().replace(/\s+/g, '_').replace(/-/g, '_');
     const isGood = normalized === 'good_lift' || normalized === 'good' || normalized === 'success' || normalized === 'pass';
     const isNoLift = normalized === 'no_lift' || normalized === 'bad' || normalized === 'fail' || normalized === 'failed' || normalized === 'reject';
 
-    // Match SessionSheet behavior: DQ athletes show red pending/empty cells.
+    const tileClass = "flex items-center justify-center h-full font-bold tabular-nums rounded-md m-1";
+
     if (isDq && (!normalized || normalized === 'pending' || normalized === 'not_attempted')) {
-      return (
-        <span className="inline-flex min-w-[52px] justify-center px-1.5 py-0.5 border-2 font-bold tracking-wide bg-[#d02e2e] text-white border-[#ff8d8d]">
-          {weight || '-'}
-        </span>
-      );
+      return <div className={tileClass} style={{ backgroundColor: '#ef4444', color: '#ffffff' }}>{weight || '-'}</div>;
     }
 
     if (normalized === 'not_attempted') {
-      return (
-        <span className="inline-flex min-w-[52px] justify-center px-1.5 py-0.5 border-2 font-bold tracking-wide bg-gray-300 text-gray-700 border-gray-400">
-          N/A
-        </span>
-      );
+      return <div className={tileClass} style={{ backgroundColor: '#e5e7eb', color: '#4b5563' }}>N/A</div>;
     }
 
     if (!weight) {
-      return <span className="inline-flex w-12 justify-center text-slate-400">-</span>;
+      return <div className={tileClass} style={{ backgroundColor: '#f1f5f9', color: '#94a3b8' }}>-</div>;
     }
 
-    const attemptClass =
-      isGood
-        ? 'bg-[#0f8f3c] text-white border-[#8fe2ae]'
-        : isNoLift
-        ? 'bg-[#d02e2e] text-white border-[#ff8d8d]'
-        : 'bg-[#f3c74a] text-[#2d1f06] border-[#ffe18b]';
-
-    return (
-      <span className={`inline-flex min-w-[52px] justify-center px-1.5 py-0.5 border-2 font-bold tracking-wide ${attemptClass}`}>
-        {weight}
-      </span>
-    );
+    if (isGood) {
+      return <div className={tileClass} style={{ backgroundColor: '#4ade80', color: '#14532d' }}>{weight}</div>;
+    }
+    if (isNoLift) {
+      return <div className={tileClass} style={{ backgroundColor: '#ef4444', color: '#ffffff' }}>{weight}</div>;
+    }
+    return <div className={tileClass} style={{ backgroundColor: '#fde047', color: '#713f12' }}>{weight}</div>;
   };
 
   const renderMedal = (medals: any) => {
@@ -398,32 +390,42 @@ const renderSessionTable = (session: any, isLive: boolean) => {
       });
     };
 
+    const headerCellStyle = { backgroundColor: '#1e1b4b', color: '#ffffff' };
+    const colGroup = (
+      <colgroup>
+        <col style={{ width: '30%' }} />
+        <col style={{ width: '6%' }} /><col style={{ width: '6%' }} /><col style={{ width: '6%' }} /><col style={{ width: '7%' }} />
+        <col style={{ width: '6%' }} /><col style={{ width: '6%' }} /><col style={{ width: '6%' }} /><col style={{ width: '7%' }} />
+        <col style={{ width: '7%' }} /><col style={{ width: '5%' }} />
+      </colgroup>
+    );
+
     return (
       <div key={session.id} className="overflow-x-auto">
-        <h3 className="px-4 sm:px-6 py-2 text-lg font-bold bg-[#0a395a]/50">{session.name || `Session ${session.session_number}`}</h3>
-        <table className="min-w-[1140px] w-full text-white">
-          <thead className="bg-[#006b39] border-y-2 border-[#0b4f79]">
-            <tr className="text-[11px] sm:text-xs tracking-[0.08em] uppercase">
-              <th className="px-3 py-2.5 text-left">#</th>
-              <th className="px-3 py-2.5 text-left">Athlete</th>
-              <th className="px-2 py-2.5 text-left">Nation/Club</th>
-              <th className="px-2 py-2.5 text-center">1st</th>
-              <th className="px-2 py-2.5 text-center">2nd</th>
-              <th className="px-2 py-2.5 text-center">3rd</th>
-              <th className="px-2 py-2.5 text-center">Best</th>
-              <th className="px-2 py-2.5 text-center">1st</th>
-              <th className="px-2 py-2.5 text-center">2nd</th>
-              <th className="px-2 py-2.5 text-center">3rd</th>
-              <th className="px-2 py-2.5 text-center">Best</th>
-              <th className="px-2 py-2.5 text-center">Total</th>
-              <th className="px-2 py-2.5 text-center">Rank</th>
-              <th className="px-2 py-2.5 text-center">DQ</th>
+        <h3 className="px-4 sm:px-6 py-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+          {session.name || `Session ${session.session_number}`}
+        </h3>
+        <table className="min-w-[1000px] w-full table-fixed border-collapse">
+          {colGroup}
+          <thead>
+            <tr className="h-11" style={headerCellStyle}>
+              <th className="px-3 text-left text-xs sm:text-sm font-bold uppercase tracking-wide" style={headerCellStyle} />
+              <th className="text-center text-xs sm:text-sm font-bold" style={headerCellStyle}>1</th>
+              <th className="text-center text-xs sm:text-sm font-bold" style={headerCellStyle}>2</th>
+              <th className="text-center text-xs sm:text-sm font-bold" style={headerCellStyle}>3</th>
+              <th className="text-center text-xs sm:text-sm font-bold" style={headerCellStyle}>Best</th>
+              <th className="text-center text-xs sm:text-sm font-bold" style={headerCellStyle}>1</th>
+              <th className="text-center text-xs sm:text-sm font-bold" style={headerCellStyle}>2</th>
+              <th className="text-center text-xs sm:text-sm font-bold" style={headerCellStyle}>3</th>
+              <th className="text-center text-xs sm:text-sm font-bold" style={headerCellStyle}>Best</th>
+              <th className="text-center text-xs sm:text-sm font-bold" style={headerCellStyle}>TOTAL</th>
+              <th className="text-center text-xs sm:text-sm font-bold" style={headerCellStyle}>RANK</th>
             </tr>
           </thead>
           <tbody>
             {sessionAthletes.length === 0 && (
-              <tr className="bg-[#0b5f95]">
-                <td colSpan={14} className="px-4 py-8 text-center text-sm text-sky-100">
+              <tr>
+                <td colSpan={11} className="px-4 py-8 text-center text-sm text-slate-400">
                   No athletes in this session yet.
                 </td>
               </tr>
@@ -434,8 +436,8 @@ const renderSessionTable = (session: any, isLive: boolean) => {
               return (
                 <Fragment key={`class-${session.id}-${classKey}`}>
                   {shouldShowClassHeaders && (
-                    <tr className="bg-[#073653] border-y border-[#12496d]">
-                      <td colSpan={14} className="px-3 py-2 text-sm font-bold tracking-wide text-[#ffe25e]">
+                    <tr className="h-10">
+                      <td colSpan={11} className="px-3 text-sm font-black uppercase tracking-wide text-white" style={{ backgroundColor: '#1e1b4b' }}>
                         {classKey.toLowerCase().includes('kg') ? classKey : `${classKey}kg`} Weight Class
                       </td>
                     </tr>
@@ -443,44 +445,38 @@ const renderSessionTable = (session: any, isLive: boolean) => {
                   {classAthletes.map((athlete: AthleteResult, index: number) => {
                     const isCurrent = isLive && highlightedAthleteKey === (athlete.athlete_name || '').toLowerCase();
                     const isDq = athlete.is_dq === true;
-                    const rowClass = isCurrent
-                      ? 'bg-[#cab72f] text-[#132130]'
-                      : isDq
-                      ? 'bg-[#0b3550] text-slate-300'
-                      : 'bg-[#0b5f95] text-white';
                     const rankValue = !isDq && (athlete.total || 0) > 0
                       ? athlete.category_rank || null
                       : null;
 
                     return (
-                      <tr key={`${athlete.registration_id}-${classKey}`} className={`${rowClass} border-b border-[#12496d]`}>
-                        <td className="px-3 py-2 font-bold text-lg">{athlete.lot_number || index + 1}</td>
-                        <td className="px-3 py-2">
-                          <div className="font-semibold text-base leading-tight">
-                            {athlete.athlete_name || 'Unknown Athlete'}
-                            {isDq && <span className="ml-2 text-xs font-bold uppercase text-red-300">DQ</span>}
+                      <tr
+                        key={`${athlete.registration_id}-${classKey}`}
+                        className="h-[52px] border-b border-slate-200"
+                        style={isCurrent ? { backgroundColor: '#fef9c3' } : undefined}
+                      >
+                        <td className="p-0 h-[52px]">
+                          <div className="h-full flex items-center justify-between gap-2 bg-slate-50 rounded-md px-3 m-1">
+                            <span className="truncate font-semibold text-black">
+                              <span className="text-slate-400 font-normal mr-2">{athlete.lot_number ?? index + 1}</span>
+                              {athlete.athlete_name || 'Unknown Athlete'}
+                              {isDq && <span className="ml-2 text-xs font-bold uppercase text-red-600">DQ</span>}
+                            </span>
+                            <span className="shrink-0 text-xs font-bold text-slate-500 uppercase">
+                              {athlete.club_name ? `(${athlete.club_name})` : ''}
+                            </span>
                           </div>
                         </td>
-                        <td className={`px-2 py-2 text-sm ${isCurrent ? 'text-[#273549]' : isDq ? 'text-slate-300' : 'text-sky-100'}`}>{athlete.club_name || '-'}</td>
-                        <td className="px-2 py-2 text-center">{renderAttempt(athlete.snatch_1_weight, athlete.snatch_1_result, isDq)}</td>
-                        <td className="px-2 py-2 text-center">{renderAttempt(athlete.snatch_2_weight, athlete.snatch_2_result, isDq)}</td>
-                        <td className="px-2 py-2 text-center">{renderAttempt(athlete.snatch_3_weight, athlete.snatch_3_result, isDq)}</td>
-                        <td className="px-2 py-2 text-center font-black text-lg">{athlete.best_snatch || '-'}</td>
-                        <td className="px-2 py-2 text-center">{renderAttempt(athlete.clean_jerk_1_weight, athlete.clean_jerk_1_result, isDq)}</td>
-                        <td className="px-2 py-2 text-center">{renderAttempt(athlete.clean_jerk_2_weight, athlete.clean_jerk_2_result, isDq)}</td>
-                        <td className="px-2 py-2 text-center">{renderAttempt(athlete.clean_jerk_3_weight, athlete.clean_jerk_3_result, isDq)}</td>
-                        <td className="px-2 py-2 text-center font-black text-lg">{athlete.best_clean_jerk || '-'}</td>
-                        <td className="px-2 py-2 text-center font-black text-xl">{athlete.total || '-'}</td>
-                        <td className="px-2 py-2 text-center font-black text-lg">{rankValue || '-'}</td>
-                        <td className="px-2 py-2 text-center">
-                          {isDq ? (
-                            <span className="inline-flex items-center justify-center min-w-[44px] px-2 py-0.5 rounded border border-red-300 bg-red-700 text-white text-xs font-black">
-                              DQ
-                            </span>
-                          ) : (
-                            <span className="text-slate-300">-</span>
-                          )}
-                        </td>
+                        <td className="p-0 h-[52px]">{renderAttempt(athlete.snatch_1_weight, athlete.snatch_1_result, isDq)}</td>
+                        <td className="p-0 h-[52px]">{renderAttempt(athlete.snatch_2_weight, athlete.snatch_2_result, isDq)}</td>
+                        <td className="p-0 h-[52px]">{renderAttempt(athlete.snatch_3_weight, athlete.snatch_3_result, isDq)}</td>
+                        <td className="text-center font-bold">{athlete.best_snatch || '-'}</td>
+                        <td className="p-0 h-[52px]">{renderAttempt(athlete.clean_jerk_1_weight, athlete.clean_jerk_1_result, isDq)}</td>
+                        <td className="p-0 h-[52px]">{renderAttempt(athlete.clean_jerk_2_weight, athlete.clean_jerk_2_result, isDq)}</td>
+                        <td className="p-0 h-[52px]">{renderAttempt(athlete.clean_jerk_3_weight, athlete.clean_jerk_3_result, isDq)}</td>
+                        <td className="text-center font-bold">{athlete.best_clean_jerk || '-'}</td>
+                        <td className="text-center font-black text-lg">{athlete.total || '-'}</td>
+                        <td className="text-center font-black text-lg">{rankValue || '-'}</td>
                       </tr>
                     );
                   })}
@@ -503,27 +499,34 @@ const renderSessionTable = (session: any, isLive: boolean) => {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-[#0a395a] bg-[#0b4f79] text-white shadow-2xl overflow-hidden">
-        <div className="px-4 sm:px-6 py-3 bg-[#e8edf1] text-[#0e1f2d] border-b-4 border-[#00a651]">
-          <p className="text-[11px] sm:text-xs font-bold tracking-[0.14em] uppercase">Lifting Social Live Feed</p>
-          <h2 className="mt-1 text-xl sm:text-3xl font-black tracking-wide">SCOREBOARD</h2>
-          <p className="mt-1 text-sm sm:text-base font-semibold">{boardLabel}</p>
-        </div>
+      <div className="rounded-2xl shadow-2xl overflow-hidden bg-white">
+        {/* Header — same teal gradient + centered title treatment as WL-System's Scoreboard screen */}
+        <div
+          className="px-4 sm:px-6 py-4 flex items-center justify-between gap-4"
+          style={{ background: 'linear-gradient(to bottom, #0c3b47, #082933)' }}
+        >
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm font-bold tracking-[0.15em] uppercase truncate" style={{ color: '#9fd8e3' }}>
+              Lifting Social — Live
+            </p>
+            <h2 className="text-lg sm:text-2xl font-black uppercase tracking-wide truncate" style={{ color: '#ffffff' }}>
+              Scoreboard — {boardLabel}
+            </h2>
+          </div>
 
-        <div className="px-4 sm:px-6 py-3 bg-[#00a651] text-white flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-start">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="relative inline-flex items-center">
               <select
                 aria-label="Select session view"
                 title="Select session view"
-                className="appearance-none !bg-none bg-white/15 border border-white/35 rounded-md pl-3 pr-8 py-1.5 text-xs sm:text-sm font-semibold text-white cursor-pointer"
+                className="appearance-none bg-white/10 border border-white/20 rounded-md pl-3 pr-8 py-1.5 text-xs sm:text-sm font-semibold text-white cursor-pointer"
                 value={selectedSession}
                 onChange={(e) => setSelectedSession(e.target.value)}
               >
-                <option value="live" className="text-[#0b4f79]">Live Session</option>
-                <option value="all" className="text-[#0b4f79]">All Sessions</option>
+                <option value="live" className="text-[#0c3b47]">Live Session</option>
+                <option value="all" className="text-[#0c3b47]">All Sessions</option>
                 {sessionButtons.map((session) => (
-                  <option key={session.value} value={session.value} className="text-[#0b4f79]">
+                  <option key={session.value} value={session.value} className="text-[#0c3b47]">
                     {session.label}
                   </option>
                 ))}
@@ -535,79 +538,72 @@ const renderSessionTable = (session: any, isLive: boolean) => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 text-sm font-semibold">
-              <span className={`inline-block w-2.5 h-2.5 rounded-full ${
-                connectionStatus === 'connected' ? 'bg-white animate-pulse' :
-                connectionStatus === 'connecting' ? 'bg-yellow-200 animate-pulse' :
-                'bg-red-200'
+            <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-white/70">
+              <span className={`inline-block w-2 h-2 rounded-full ${
+                connectionStatus === 'connected' ? 'bg-emerald-400 animate-pulse' :
+                connectionStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
+                'bg-red-400'
               }`} />
-              <span>
-                {connectionStatus === 'connected' ? 'Broadcast Connected' :
-                 connectionStatus === 'connecting' ? 'Connecting...' :
-                 'Disconnected'}
-              </span>
+              {connectionStatus === 'connected' ? 'Live' : connectionStatus === 'connecting' ? 'Connecting…' : 'Disconnected'}
             </div>
           </div>
         </div>
 
         {liveState && liveState.current_athlete_name && (
-          <div className="px-4 sm:px-6 py-4 bg-gradient-to-r from-[#005787] to-[#00456a] border-b border-white/20">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.14em] text-sky-100">On Platform</p>
-                <p className="text-xl sm:text-2xl font-extrabold">{liveState.current_athlete_name}</p>
-                <p className="text-sm sm:text-base text-sky-100">
-                  {liveState.current_lift_type === 'snatch' ? 'Snatch' : 'Clean & Jerk'} • Attempt {liveState.current_attempt_number} • {liveState.current_weight} kg
-                </p>
-              </div>
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-200 flex flex-col gap-3 md:flex-row md:items-center md:justify-between" style={{ backgroundColor: '#f0fdfa' }}>
+            <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">On Platform</p>
+              <p className="text-xl sm:text-2xl font-extrabold text-slate-900">{liveState.current_athlete_name}</p>
+              <p className="text-sm sm:text-base text-slate-600">
+                {liveState.current_lift_type === 'snatch' ? 'Snatch' : 'Clean & Jerk'} • Attempt {liveState.current_attempt_number} • {liveState.current_weight} kg
+              </p>
+            </div>
 
-              <div className="flex items-center gap-3">
-                {liveState.timer_running && (
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white/60 flex items-center justify-center bg-white/10">
-                    <span className="font-mono text-2xl sm:text-3xl font-black">{liveState.timer_remaining}</span>
-                  </div>
-                )}
-                {liveState.next_athlete_name && (
-                  <div className="text-sm text-right">
-                    <p className="uppercase tracking-[0.12em] text-sky-100 text-[10px]">Next</p>
-                    <p className="font-bold">{liveState.next_athlete_name}</p>
-                    <p className="text-sky-100">{liveState.next_weight} kg</p>
-                  </div>
-                )}
-              </div>
+            <div className="flex items-center gap-3">
+              {liveState.timer_running && (
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-[#0c3b47]/30 flex items-center justify-center bg-white">
+                  <span className="font-mono text-xl sm:text-2xl font-black text-[#0c3b47]">{liveState.timer_remaining}</span>
+                </div>
+              )}
+              {liveState.next_athlete_name && (
+                <div className="text-sm text-right">
+                  <p className="uppercase tracking-[0.12em] text-slate-400 text-[10px]">Next</p>
+                  <p className="font-bold text-slate-900">{liveState.next_athlete_name}</p>
+                  <p className="text-slate-600">{liveState.next_weight} kg</p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-4 py-2">
           {visibleSessions.visibleInProgress.map(session => renderSessionTable(session, true))}
-          
+
           {visibleSessions.visibleScheduled.length > 0 && (
             <div>
-              <h3 className="px-4 sm:px-6 py-2 text-lg font-bold bg-[#0a395a]/80">Upcoming Sessions</h3>
+              <h3 className="px-4 sm:px-6 py-2 text-sm font-bold uppercase tracking-wide text-slate-500">Upcoming Sessions</h3>
               {visibleSessions.visibleScheduled.map(session => renderSessionTable(session, false))}
             </div>
           )}
 
           {visibleSessions.visibleCompleted.length > 0 && (
             <div>
-              <h3 className="px-4 sm:px-6 py-2 text-lg font-bold bg-[#0a395a]/60">Completed Sessions</h3>
+              <h3 className="px-4 sm:px-6 py-2 text-sm font-bold uppercase tracking-wide text-slate-500">Completed Sessions</h3>
               {visibleSessions.visibleCompleted.map(session => renderSessionTable(session, false))}
             </div>
           )}
 
           {visibleSessions.visibleInProgress.length === 0 && visibleSessions.visibleScheduled.length === 0 && visibleSessions.visibleCompleted.length === 0 && (
-             <div className="px-4 py-8 text-center text-sm text-sky-100">
+             <div className="px-4 py-8 text-center text-sm text-slate-400">
                 No sessions found for this competition yet.
               </div>
           )}
         </div>
 
-        <div className="px-4 sm:px-6 py-3 text-xs sm:text-sm bg-[#073653] text-sky-100 flex flex-wrap gap-4">
-          <span><span className="font-bold text-white">Yellow box</span>: declared/pending</span>
-          <span><span className="font-bold text-white">Green box</span>: good lift</span>
-          <span><span className="font-bold text-white">Red box</span>: no lift</span>
-          <span><span className="font-bold text-[#ffe25e]">Gold row</span>: current lifter</span>
+        <div className="px-4 sm:px-6 py-3 text-xs sm:text-sm bg-slate-50 border-t border-slate-200 text-slate-600 flex flex-wrap gap-4">
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: '#fde047' }} /> Declared/pending</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: '#4ade80' }} /> Good lift</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: '#ef4444' }} /> No lift</span>
         </div>
       </div>
 

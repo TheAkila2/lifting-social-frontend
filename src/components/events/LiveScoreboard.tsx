@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import api from '@/lib/api';
 
@@ -75,7 +75,10 @@ export default function LiveScoreboard({ eventId, showControls = false }: LiveSc
   const [selectedSession, setSelectedSession] = useState<string>('live');
   const [availableSessionsDetails, setAvailableSessionsDetails] = useState<any[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [scale, setScale] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
+  const scaleViewportRef = useRef<HTMLDivElement>(null);
+  const scaleContentRef = useRef<HTMLDivElement>(null);
   const fetchSequenceRef = useRef(0);
 
   // "Expand" mode — a CSS-only full-viewport overlay instead of the native
@@ -90,6 +93,47 @@ export default function LiveScoreboard({ eventId, showControls = false }: LiveSc
   }, [isFullscreen]);
 
   const toggleFullscreen = () => setIsFullscreen((prev) => !prev);
+
+  // Scale the whole table down (never up) to fit the viewport with no
+  // scrolling at all — same "fit to screen" technique as the desktop
+  // Technical Panel's own Scoreboard screen, so a phone in landscape gets
+  // the same no-scroll full-screen experience instead of a tiny slice of a
+  // 1000px-wide table under a horizontal scrollbar.
+  useLayoutEffect(() => {
+    if (!isFullscreen) {
+      setScale(1);
+      return;
+    }
+
+    const measure = () => {
+      const viewport = scaleViewportRef.current;
+      const content = scaleContentRef.current;
+      if (!viewport || !content) return;
+
+      const prevTransform = content.style.transform;
+      content.style.transform = 'none';
+      const contentWidth = content.scrollWidth;
+      const contentHeight = content.scrollHeight;
+      content.style.transform = prevTransform;
+
+      if (!contentWidth || !contentHeight) return;
+
+      const widthScale = viewport.clientWidth / contentWidth;
+      const heightScale = viewport.clientHeight / contentHeight;
+      setScale(Math.min(1, widthScale, heightScale));
+    };
+
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('orientationchange', measure);
+    const rafId = requestAnimationFrame(measure);
+
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('orientationchange', measure);
+      cancelAnimationFrame(rafId);
+    };
+  }, [isFullscreen, athletes, selectedSession]);
 
   const { scheduledSessions, inProgressSessions, completedSessions } = useMemo(() => {
     const scheduled: any[] = [];
@@ -603,28 +647,41 @@ const renderSessionTable = (session: any, isLive: boolean) => {
           </div>
         )}
 
-        <div className={`space-y-4 py-2 ${isFullscreen ? 'flex-1 overflow-y-auto' : ''}`}>
-          {visibleSessions.visibleInProgress.map(session => renderSessionTable(session, true))}
+        <div
+          ref={scaleViewportRef}
+          className={`space-y-4 py-2 ${isFullscreen ? 'flex-1 overflow-hidden' : ''}`}
+        >
+          <div
+            ref={scaleContentRef}
+            style={
+              isFullscreen
+                ? { transform: `scale(${scale})`, transformOrigin: 'top left', width: scale < 1 ? `${100 / scale}%` : '100%' }
+                : undefined
+            }
+            className="space-y-4"
+          >
+            {visibleSessions.visibleInProgress.map(session => renderSessionTable(session, true))}
 
-          {visibleSessions.visibleScheduled.length > 0 && (
-            <div>
-              <h3 className="px-4 sm:px-6 py-2 text-sm font-bold uppercase tracking-wide text-slate-500">Upcoming Sessions</h3>
-              {visibleSessions.visibleScheduled.map(session => renderSessionTable(session, false))}
-            </div>
-          )}
-
-          {visibleSessions.visibleCompleted.length > 0 && (
-            <div>
-              <h3 className="px-4 sm:px-6 py-2 text-sm font-bold uppercase tracking-wide text-slate-500">Completed Sessions</h3>
-              {visibleSessions.visibleCompleted.map(session => renderSessionTable(session, false))}
-            </div>
-          )}
-
-          {visibleSessions.visibleInProgress.length === 0 && visibleSessions.visibleScheduled.length === 0 && visibleSessions.visibleCompleted.length === 0 && (
-             <div className="px-4 py-8 text-center text-sm text-slate-400">
-                No sessions found for this competition yet.
+            {visibleSessions.visibleScheduled.length > 0 && (
+              <div>
+                <h3 className="px-4 sm:px-6 py-2 text-sm font-bold uppercase tracking-wide text-slate-500">Upcoming Sessions</h3>
+                {visibleSessions.visibleScheduled.map(session => renderSessionTable(session, false))}
               </div>
-          )}
+            )}
+
+            {visibleSessions.visibleCompleted.length > 0 && (
+              <div>
+                <h3 className="px-4 sm:px-6 py-2 text-sm font-bold uppercase tracking-wide text-slate-500">Completed Sessions</h3>
+                {visibleSessions.visibleCompleted.map(session => renderSessionTable(session, false))}
+              </div>
+            )}
+
+            {visibleSessions.visibleInProgress.length === 0 && visibleSessions.visibleScheduled.length === 0 && visibleSessions.visibleCompleted.length === 0 && (
+               <div className="px-4 py-8 text-center text-sm text-slate-400">
+                  No sessions found for this competition yet.
+                </div>
+            )}
+          </div>
         </div>
 
         <div className="px-4 sm:px-6 py-3 text-xs sm:text-sm bg-slate-50 border-t border-slate-200 text-slate-600 flex flex-wrap gap-4">

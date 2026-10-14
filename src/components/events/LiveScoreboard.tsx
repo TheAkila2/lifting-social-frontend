@@ -75,7 +75,28 @@ export default function LiveScoreboard({ eventId, showControls = false }: LiveSc
   const [resolvedEventId, setResolvedEventId] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<string>('live');
   const [availableSessionsDetails, setAvailableSessionsDetails] = useState<any[]>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const fetchSequenceRef = useRef(0);
+
+  // Fullscreen mode — the wide per-attempt grid is unusable on a phone
+  // otherwise (tiny, squeezed into the visible viewport under the browser
+  // chrome); fullscreen + horizontal scroll makes it actually readable.
+  useEffect(() => {
+    const handleChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handleChange);
+    return () => document.removeEventListener('fullscreenchange', handleChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   const { scheduledSessions, inProgressSessions, completedSessions } = useMemo(() => {
     const scheduled: any[] = [];
@@ -228,6 +249,13 @@ export default function LiveScoreboard({ eventId, showControls = false }: LiveSc
 
     newSocket.on('disconnect', () => {
       console.log('WebSocket disconnected');
+      setConnectionStatus('disconnected');
+    });
+
+    newSocket.on('connect_error', (err) => {
+      // Without this, a CORS rejection (or any failed handshake) leaves the
+      // status stuck on "Connecting..." forever with no visible error.
+      console.error('WebSocket connect error:', err.message);
       setConnectionStatus('disconnected');
     });
 
@@ -498,11 +526,11 @@ const renderSessionTable = (session: any, isLive: boolean) => {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl shadow-2xl overflow-hidden bg-white">
+    <div className="space-y-5" ref={containerRef}>
+      <div className={`rounded-2xl shadow-2xl overflow-hidden bg-white ${isFullscreen ? 'h-screen flex flex-col rounded-none' : ''}`}>
         {/* Header — same teal gradient + centered title treatment as WL-System's Scoreboard screen */}
         <div
-          className="px-4 sm:px-6 py-4 flex items-center justify-between gap-4"
+          className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 flex-wrap shrink-0"
           style={{ background: 'linear-gradient(to bottom, #0c3b47, #082933)' }}
         >
           <div className="min-w-0">
@@ -514,7 +542,7 @@ const renderSessionTable = (session: any, isLive: boolean) => {
             </h2>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div className="relative inline-flex items-center">
               <select
                 aria-label="Select session view"
@@ -546,6 +574,20 @@ const renderSessionTable = (session: any, isLive: boolean) => {
               }`} />
               {connectionStatus === 'connected' ? 'Live' : connectionStatus === 'connecting' ? 'Connecting…' : 'Disconnected'}
             </div>
+
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen (better on mobile)'}
+              className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-md px-2.5 py-1.5 text-xs sm:text-sm font-semibold text-white transition-colors"
+            >
+              {isFullscreen ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 9H4.5M9 9V4.5M9 9L3.75 3.75M15 9h4.5M15 9V4.5M15 9l5.25-5.25M9 15H4.5M9 15v4.5M9 15l-5.25 5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" /></svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 3.5H4.5V7M16 3.5h3.5V7M8 20.5H4.5V17M16 20.5h3.5V17" /></svg>
+              )}
+              <span className="hidden sm:inline">{isFullscreen ? 'Exit' : 'Full Screen'}</span>
+            </button>
           </div>
         </div>
 
@@ -576,7 +618,7 @@ const renderSessionTable = (session: any, isLive: boolean) => {
           </div>
         )}
 
-        <div className="space-y-4 py-2">
+        <div className={`space-y-4 py-2 ${isFullscreen ? 'flex-1 overflow-y-auto' : ''}`}>
           {visibleSessions.visibleInProgress.map(session => renderSessionTable(session, true))}
 
           {visibleSessions.visibleScheduled.length > 0 && (

@@ -71,7 +71,6 @@ export default function LiveScoreboard({ eventId, showControls = false }: LiveSc
   const [liveState, setLiveState] = useState<LiveState | null>(null);
   const [athletes, setAthletes] = useState<AthleteResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const [resolvedEventId, setResolvedEventId] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<string>('live');
   const [availableSessionsDetails, setAvailableSessionsDetails] = useState<any[]>([]);
@@ -79,24 +78,18 @@ export default function LiveScoreboard({ eventId, showControls = false }: LiveSc
   const containerRef = useRef<HTMLDivElement>(null);
   const fetchSequenceRef = useRef(0);
 
-  // Fullscreen mode — the wide per-attempt grid is unusable on a phone
-  // otherwise (tiny, squeezed into the visible viewport under the browser
-  // chrome); fullscreen + horizontal scroll makes it actually readable.
+  // "Expand" mode — a CSS-only full-viewport overlay instead of the native
+  // Fullscreen API. iOS Safari on iPhone (unlike iPad) doesn't support
+  // requestFullscreen() on arbitrary elements at all, so that approach
+  // silently did nothing on phones. This works identically everywhere.
   useEffect(() => {
-    const handleChange = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', handleChange);
-    return () => document.removeEventListener('fullscreenchange', handleChange);
-  }, []);
+    document.body.style.overflow = isFullscreen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isFullscreen]);
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen().catch((err) => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`);
-      });
-    } else {
-      document.exitFullscreen();
-    }
-  };
+  const toggleFullscreen = () => setIsFullscreen((prev) => !prev);
 
   const { scheduledSessions, inProgressSessions, completedSessions } = useMemo(() => {
     const scheduled: any[] = [];
@@ -243,20 +236,19 @@ export default function LiveScoreboard({ eventId, showControls = false }: LiveSc
 
     newSocket.on('connect', () => {
       console.log('WebSocket connected');
-      setConnectionStatus('connected');
       newSocket.emit('join-competition', resolvedEventId || eventId);
     });
 
     newSocket.on('disconnect', () => {
       console.log('WebSocket disconnected');
-      setConnectionStatus('disconnected');
     });
 
     newSocket.on('connect_error', (err) => {
-      // Without this, a CORS rejection (or any failed handshake) leaves the
-      // status stuck on "Connecting..." forever with no visible error.
+      // The 5s poll (above) is the real data path regardless of socket
+      // state, so a failed handshake here is just logged, not surfaced —
+      // the UI indicator for this was more confusing than useful in
+      // practice (e.g. iOS backgrounding tabs disconnects sockets harmlessly).
       console.error('WebSocket connect error:', err.message);
-      setConnectionStatus('disconnected');
     });
 
     newSocket.on('live-update', (update: any) => {
@@ -527,7 +519,9 @@ const renderSessionTable = (session: any, isLive: boolean) => {
 
   return (
     <div className="space-y-5" ref={containerRef}>
-      <div className={`rounded-2xl shadow-2xl overflow-hidden bg-white ${isFullscreen ? 'h-screen flex flex-col rounded-none' : ''}`}>
+      <div
+        className={`rounded-2xl shadow-2xl overflow-hidden bg-white ${isFullscreen ? 'fixed inset-0 z-[60] h-[100dvh] w-screen flex flex-col rounded-none' : ''}`}
+      >
         {/* Header — same teal gradient + centered title treatment as WL-System's Scoreboard screen */}
         <div
           className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 flex-wrap shrink-0"
@@ -564,15 +558,6 @@ const renderSessionTable = (session: any, isLive: boolean) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </div>
-            </div>
-
-            <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-white/70">
-              <span className={`inline-block w-2 h-2 rounded-full ${
-                connectionStatus === 'connected' ? 'bg-emerald-400 animate-pulse' :
-                connectionStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
-                'bg-red-400'
-              }`} />
-              {connectionStatus === 'connected' ? 'Live' : connectionStatus === 'connecting' ? 'Connecting…' : 'Disconnected'}
             </div>
 
             <button

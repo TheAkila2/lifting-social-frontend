@@ -187,7 +187,7 @@ function ShopContent() {
 
 export default function ShopPage() {
   return (
-    <div className="min-h-screen pt-20">
+    <div className="min-h-screen">
       <Suspense fallback={
         <div className="container mx-auto px-4 py-8">
           <div className="animate-pulse">

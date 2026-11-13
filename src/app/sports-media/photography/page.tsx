@@ -62,7 +62,7 @@ export default function PhotographyPage() {
   return (
     <main className="min-h-screen bg-white">
       {/* Breadcrumb */}
-      <div className="bg-zinc-50 border-b border-zinc-100 pt-20">
+      <div className="bg-zinc-50 border-b border-zinc-100">
         <div className="container mx-auto px-4 py-3">
           <Link
             href="/sports-media"

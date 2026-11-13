@@ -68,7 +68,7 @@ function EventsContent() {
 
 export default function EventsPage() {
   return (
-    <div className="min-h-screen pt-20">
+    <div className="min-h-screen">
       <Suspense fallback={
         <div className="container-custom section-padding">
           <div className="animate-pulse">

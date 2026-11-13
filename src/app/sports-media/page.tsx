@@ -53,7 +53,7 @@ export default function SportsMediaPage() {
   return (
     <main className="min-h-screen bg-white">
       {/* Hero — matches events / coaching dark header */}
-      <section className="bg-zinc-950 pt-24 sm:pt-28 pb-10 sm:pb-14">
+      <section className="bg-zinc-950 py-8 sm:py-12 md:py-16">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

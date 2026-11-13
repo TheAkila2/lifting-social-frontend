@@ -148,7 +148,7 @@ export default function Hero() {
 
   return (
     <section
-      className="relative overflow-hidden bg-gradient-to-b from-zinc-50 via-white to-zinc-100 h-[100svh] flex flex-col items-center justify-between sm:justify-start pt-20 pb-4 sm:pt-20 sm:pb-6 px-4 sm:px-6"
+      className="relative overflow-hidden bg-gradient-to-b from-zinc-50 via-white to-zinc-100 h-[100svh] flex flex-col items-center justify-between sm:justify-start pt-4 pb-4 sm:pt-8 sm:pb-6 px-4 sm:px-6"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       aria-roledescription="carousel"
@@ -173,10 +173,7 @@ export default function Hero() {
           {/* Premium minimal header — centered, compact. Sits right under the navbar with
               minimal breathing space so the carousel can fit in the viewport below it. */}
           <div className="w-full max-w-2xl mx-auto px-2 sm:px-0 text-center mb-3 sm:mb-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.32em] sm:tracking-[0.4em] text-zinc-400">
-              Lifting Social
-            </p>
-            <h1 className="mt-2 font-display text-[28px] sm:text-3xl lg:text-4xl xl:text-5xl leading-[1.05] font-bold tracking-tight text-zinc-900">
+            <h1 className="font-display text-[28px] sm:text-3xl lg:text-4xl xl:text-5xl leading-[1.05] font-bold tracking-tight text-zinc-900">
               Built for Champions
             </h1>
             <p className="mt-1.5 text-zinc-500 text-xs sm:text-sm font-medium">

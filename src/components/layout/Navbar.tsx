@@ -180,7 +180,7 @@ export default function Navbar() {
                 <Link
                   key={link.name}
                   href={link.href}
-                  className={`font-nav py-2 text-xs sm:text-sm md:text-[15px] font-bold uppercase tracking-wide transition-colors duration-200 ${
+                  className={`font-sans py-2 text-sm md:text-[15px] font-medium tracking-normal transition-colors duration-200 ${
                     isActive(link.href)
                       ? 'text-zinc-900'
                       : 'text-zinc-500 hover:text-zinc-900'

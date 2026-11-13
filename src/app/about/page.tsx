@@ -6,7 +6,7 @@ import Link from 'next/link'
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen pt-20 bg-white">
+    <div className="min-h-screen bg-white">
       {/* Hero */}
       <section className="bg-white py-8 sm:py-12 md:py-16">
         <div className="container mx-auto px-4">

@@ -55,7 +55,7 @@ export default function StarRating({
             <Star
               className={`${sizeClasses[size]} transition-colors ${
                 star <= displayRating
-                  ? 'fill-yellow-400 text-yellow-400'
+                  ? 'fill-zinc-900 text-zinc-900'
                   : 'text-zinc-300'
               }`}
             />

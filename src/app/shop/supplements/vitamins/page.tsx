@@ -3,20 +3,12 @@
 import { Suspense } from 'react'
 import ProductGrid from '@/components/shop/ProductGrid'
 import ShopCategoryNav from '@/components/shop/ShopCategoryNav'
+import ShopCategoryHeader from '@/components/shop/ShopCategoryHeader'
 
 function VitaminsContent() {
   return (
     <>
-      <div className="bg-zinc-900 text-white py-8 sm:py-12 lg:py-16 border-b border-zinc-800">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold mb-3 sm:mb-4">Vitamins</h1>
-            <p className="text-sm sm:text-base lg:text-lg text-zinc-400 leading-relaxed">
-              Essential micronutrients. Support overall health and athletic performance.
-            </p>
-          </div>
-        </div>
-      </div>
+      <ShopCategoryHeader title="Vitamins" subtitle="Essential micronutrients. Support overall health and athletic performance." />
 
       <ShopCategoryNav />
 
@@ -30,5 +22,5 @@ function VitaminsContent() {
 }
 
 export default function VitaminsPage() {
-  return <div className="min-h-screen pt-20"><Suspense fallback={<div className="container mx-auto px-4 py-8"><div className="animate-pulse"><div className="h-32 bg-zinc-200 rounded-lg mb-8" /><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">{Array.from({ length: 6 }).map((_, i) => (<div key={i} className="bg-zinc-200 rounded-lg aspect-square" />))}</div></div></div>}><VitaminsContent /></Suspense></div>
+  return <div className="min-h-screen"><Suspense fallback={<div className="container mx-auto px-4 py-8"><div className="animate-pulse"><div className="h-32 bg-zinc-200 rounded-lg mb-8" /><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">{Array.from({ length: 6 }).map((_, i) => (<div key={i} className="bg-zinc-200 rounded-lg aspect-square" />))}</div></div></div>}><VitaminsContent /></Suspense></div>
 }

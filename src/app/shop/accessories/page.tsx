@@ -3,21 +3,13 @@
 import { Suspense } from 'react'
 import ProductGrid from '@/components/shop/ProductGrid'
 import ShopCategoryNav from '@/components/shop/ShopCategoryNav'
+import ShopCategoryHeader from '@/components/shop/ShopCategoryHeader'
 
 function AccessoriesContent() {
   return (
     <>
       {/* Header */}
-      <div className="bg-zinc-900 text-white py-8 sm:py-12 lg:py-16 border-b border-zinc-800">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold mb-3 sm:mb-4">Accessories</h1>
-            <p className="text-sm sm:text-base lg:text-lg text-zinc-400 leading-relaxed">
-              Essential weightlifting gear. Belts, wraps, straps, and more to support your lifts.
-            </p>
-          </div>
-        </div>
-      </div>
+      <ShopCategoryHeader title="Accessories" subtitle="Essential weightlifting gear. Belts, wraps, straps, and more to support your lifts." />
 
       {/* Navigation */}
       <ShopCategoryNav />
@@ -34,7 +26,7 @@ function AccessoriesContent() {
 
 export default function AccessoriesPage() {
   return (
-    <div className="min-h-screen pt-20">
+    <div className="min-h-screen">
       <Suspense fallback={
         <div className="container mx-auto px-4 py-8">
           <div className="animate-pulse">

@@ -1,18 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { 
-  FaShoppingCart, 
-  FaHeart, 
-  FaChevronLeft, 
-  FaStar, 
-  FaShippingFast,
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  FaShoppingCart,
+  FaChevronRight,
+  FaChevronDown,
   FaCheckCircle,
   FaMinus,
-  FaPlus
+  FaPlus,
+  FaTruck,
 } from 'react-icons/fa'
 import api from '@/lib/api'
 import { useCart } from '@/contexts/CartContext'
@@ -42,18 +41,54 @@ interface Product {
   shippingAmount?: number
 }
 
+function AccordionSection({
+  title,
+  isOpen,
+  onToggle,
+  children,
+}: {
+  title: string
+  isOpen: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <div className="border-b border-zinc-100 last:border-b-0">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between py-4 sm:py-5 text-left"
+      >
+        <span className="font-semibold text-sm sm:text-base text-zinc-900">{title}</span>
+        <FaChevronDown className={`text-zinc-400 text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="overflow-hidden"
+          >
+            <div className="pb-5 sm:pb-6">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 export default function ProductDetailPage() {
   const params = useParams()
-  const router = useRouter()
   const { addItem } = useCart()
-  
+
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedSize, setSelectedSize] = useState('')
   const [selectedColor, setSelectedColor] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [selectedImage, setSelectedImage] = useState(0)
-  const [activeTab, setActiveTab] = useState('description')
+  const [openSection, setOpenSection] = useState<'description' | 'details' | 'reviews' | null>('description')
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -62,11 +97,9 @@ export default function ProductDetailPage() {
         const response = await api.get(`/products/${params.id}`)
         const productData = response.data
         setProduct(productData)
-        
-        // Add to recently viewed
+
         addToRecentlyViewed(params.id as string)
-        
-        // Set default selections
+
         if (productData.sizes && productData.sizes.length > 0) {
           setSelectedSize(productData.sizes[0])
         }
@@ -100,7 +133,6 @@ export default function ProductDetailPage() {
       shippingAmount: product.shippingAmount || 0,
     })
 
-    // Show success notification (you can add a toast library later)
     alert(`Added ${quantity} ${product.name} to cart!`)
   }
 
@@ -108,12 +140,16 @@ export default function ProductDetailPage() {
     setQuantity(prev => Math.max(1, prev + delta))
   }
 
+  const toggleSection = (section: 'description' | 'details' | 'reviews') => {
+    setOpenSection(prev => (prev === section ? null : section))
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-white pt-20 sm:pt-28 pb-8 sm:pb-12">
+      <div className="min-h-screen bg-white pt-10 sm:pt-14 pb-8 sm:pb-12">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-center h-64 sm:h-96">
-            <p className="text-gray-500">Loading product...</p>
+            <p className="text-zinc-500">Loading product...</p>
           </div>
         </div>
       </div>
@@ -122,11 +158,11 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-white pt-20 sm:pt-28 pb-8 sm:pb-12">
+      <div className="min-h-screen bg-white pt-10 sm:pt-14 pb-8 sm:pb-12">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center py-8 sm:py-12">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Product not found</h2>
-            <Link href="/shop" className="inline-block px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-900 font-semibold">
+            <h2 className="text-xl sm:text-2xl font-bold text-zinc-900 mb-4">Product not found</h2>
+            <Link href="/shop" className="inline-block px-6 py-3 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 font-semibold">
               Back to Shop
             </Link>
           </div>
@@ -135,44 +171,43 @@ export default function ProductDetailPage() {
     )
   }
 
-  const images = product.images && product.images.length > 0 
-    ? product.images 
+  const images = product.images && product.images.length > 0
+    ? product.images
     : [product.image]
-  
-  const discount = product.comparePrice 
+
+  const discount = product.comparePrice
     ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
     : 0
 
   return (
-    <div className="min-h-screen bg-zinc-50 pt-20 sm:pt-24 lg:pt-28 pb-12 lg:pb-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Back Button */}
-        <Link 
-          href="/shop"
-          className="inline-flex items-center space-x-2 text-zinc-600 hover:text-zinc-900 transition-colors mb-6 lg:mb-8 text-sm sm:text-base"
-        >
-          <FaChevronLeft className="text-xs sm:text-sm" />
-          <span className="font-medium">Back to Shop</span>
-        </Link>
+    <div className="min-h-screen bg-white pt-10 sm:pt-14 lg:pt-16 pb-12 lg:pb-16">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-xs sm:text-sm text-zinc-500 mb-6 lg:mb-8">
+          <Link href="/shop" className="hover:text-zinc-900 transition-colors">Shop</Link>
+          <FaChevronRight className="text-[8px]" />
+          <span className="capitalize">{product.category}</span>
+          <FaChevronRight className="text-[8px]" />
+          <span className="text-zinc-900 font-medium line-clamp-1">{product.name}</span>
+        </nav>
 
         {/* Product Detail Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 mb-12 lg:mb-16">
-          {/* Product Images - Left Side */}
-          <div className="lg:col-span-7 space-y-4">
-            {/* Main Image */}
-            <motion.div 
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 mb-14 lg:mb-20">
+          {/* Images */}
+          <div className="lg:col-span-7 space-y-3 sm:space-y-4">
+            <motion.div
               key={selectedImage}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
-              className={`relative bg-white rounded-2xl overflow-hidden border border-zinc-200 shadow-sm flex items-center justify-center ${
-                product.category === 'supplements' 
-                  ? 'h-72 sm:h-80 md:h-96' 
+              className={`relative bg-zinc-50 rounded-2xl overflow-hidden flex items-center justify-center ${
+                product.category === 'supplements'
+                  ? 'h-72 sm:h-80 md:h-96'
                   : 'aspect-square'
               }`}
             >
               {images[selectedImage] ? (
-                <div 
+                <div
                   className={`absolute inset-0 ${
                     product.category === 'supplements'
                       ? 'bg-contain bg-no-repeat bg-center'
@@ -187,44 +222,28 @@ export default function ProductDetailPage() {
                   </span>
                 </div>
               )}
-              
-              {/* Discount Badge */}
-              {discount > 0 && (
-                <div className="absolute top-3 sm:top-4 right-3 sm:right-4 bg-red-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-bold text-xs sm:text-sm">
-                  {discount}% OFF
-                </div>
-              )}
 
-              {/* Stock Badge */}
-              {product.inStock ? (
-                <div className="absolute top-3 sm:top-4 left-3 sm:left-4 bg-green-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-medium text-xs sm:text-sm flex items-center gap-1.5">
-                  <FaCheckCircle className="text-xs" />
-                  <span>In Stock</span>
-                </div>
-              ) : (
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                  <div className="bg-white px-6 py-3 rounded-full">
-                    <span className="text-zinc-900 font-bold text-base sm:text-lg">OUT OF STOCK</span>
-                  </div>
+              {!product.inStock && (
+                <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center">
+                  <span className="text-zinc-900 font-semibold text-sm uppercase tracking-widest">Out of stock</span>
                 </div>
               )}
             </motion.div>
 
-            {/* Thumbnail Images */}
             {images.length > 1 && (
-              <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
+              <div className="grid grid-cols-5 sm:grid-cols-6 gap-2 sm:gap-3">
                 {images.map((img, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`relative aspect-square rounded-lg sm:rounded-xl overflow-hidden transition-all border-2 ${
-                      selectedImage === index 
-                        ? 'ring-2 ring-zinc-900 border-zinc-900 scale-95' 
-                        : 'border-zinc-200 opacity-70 hover:opacity-100 hover:border-zinc-400'
+                    className={`relative aspect-square rounded-lg overflow-hidden transition-all border ${
+                      selectedImage === index
+                        ? 'border-zinc-900'
+                        : 'border-zinc-200 opacity-70 hover:opacity-100'
                     }`}
                   >
                     {img ? (
-                      <div 
+                      <div
                         className="absolute inset-0 bg-cover bg-center"
                         style={{ backgroundImage: `url(${img})` }}
                       />
@@ -237,72 +256,74 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* Product Info - Right Side */}
-          <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24 lg:self-start">
-            {/* Category Badge */}
-            <div className="inline-flex items-center px-3 py-1.5 bg-zinc-900 text-white text-xs sm:text-sm font-semibold rounded-full uppercase tracking-wider">
+          {/* Info */}
+          <div className="lg:col-span-5 lg:sticky lg:top-28 lg:self-start">
+            <span className="text-xs font-semibold uppercase tracking-widest text-zinc-400">
               {product.category}
-            </div>
+            </span>
 
-            {/* Product Name */}
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-zinc-900 leading-tight">
+            <h1 className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-zinc-900 leading-tight">
               {product.name}
             </h1>
 
-            {/* Rating */}
-            <div className="pb-4 border-b border-zinc-200">
+            <div className="mt-3 pb-5 border-b border-zinc-100">
               <RatingSummary productId={product._id || product.id || params.id as string} />
             </div>
 
-            {/* Price */}
-            <div className="space-y-2">
-              <div className="flex items-baseline flex-wrap gap-3">
-                <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-zinc-900">
-                  LKR {product.price.toLocaleString()}
+            <div className="mt-5 flex items-baseline flex-wrap gap-3">
+              <span className="text-3xl sm:text-4xl font-display font-bold text-zinc-900">
+                LKR {product.price.toLocaleString()}
+              </span>
+              {product.comparePrice && (
+                <span className="text-lg text-zinc-400 line-through">
+                  LKR {product.comparePrice.toLocaleString()}
                 </span>
-                {product.comparePrice && (
-                  <span className="text-xl sm:text-2xl text-zinc-400 line-through">
-                    LKR {product.comparePrice.toLocaleString()}
-                  </span>
-                )}
-              </div>
+              )}
               {discount > 0 && (
-                <p className="text-sm text-green-600 font-medium">
-                  You save LKR {(product.comparePrice! - product.price).toLocaleString()} ({discount}% off)
-                </p>
+                <span className="text-sm font-semibold text-red-600">
+                  Save {discount}%
+                </span>
               )}
             </div>
 
-            {/* Shipping Information */}
-            <div className="space-y-3">
-              {product.shippingType === 'free' ? (
-                <div className="bg-gradient-to-br from-status-positive/15 to-emerald-100 border border-status-positive/40 rounded-card px-4 py-3.5 backdrop-blur-sm">
-                  <p className="font-sans text-status-positive font-semibold text-sm mb-1">Free Delivery</p>
-                  <p className="font-sans text-status-positive/80 text-xs">No shipping charges on this product</p>
-                </div>
-              ) : product.shippingType === 'paid' ? (
-                <div className="bg-gradient-to-br from-brand-accent/15 to-blue-100 border border-brand-accent/40 rounded-card px-4 py-3.5 backdrop-blur-sm">
-                  <p className="font-sans text-brand-accent font-semibold text-sm mb-1">Shipping Cost</p>
-                  <p className="font-sans text-brand-accent/80 text-xs">LKR {product.shippingAmount?.toLocaleString()} for this product</p>
-                </div>
-              ) : null}
+            <div className="mt-4 flex items-center gap-2 text-sm">
+              {product.inStock ? (
+                <>
+                  <FaCheckCircle className="text-green-600 text-xs" />
+                  <span className="text-zinc-600">In stock</span>
+                </>
+              ) : (
+                <span className="text-red-600 font-medium">Out of stock</span>
+              )}
             </div>
+
+            {product.shippingType === 'free' ? (
+              <div className="mt-3 flex items-center gap-2 text-sm text-zinc-600">
+                <FaTruck className="text-zinc-400 text-xs" />
+                <span>Free delivery on this product</span>
+              </div>
+            ) : product.shippingType === 'paid' ? (
+              <div className="mt-3 flex items-center gap-2 text-sm text-zinc-600">
+                <FaTruck className="text-zinc-400 text-xs" />
+                <span>Shipping: LKR {product.shippingAmount?.toLocaleString()}</span>
+              </div>
+            ) : null}
 
             {/* Size/Flavour Selection */}
             {product.sizes && product.sizes.length > 0 && (
-              <div className="space-y-3">
-                <label className="block text-zinc-900 font-semibold text-sm uppercase tracking-wide">
-                  {product.category === 'supplements' ? 'Select Flavour' : 'Select Size'}
+              <div className="mt-6 space-y-3">
+                <label className="block text-zinc-900 font-semibold text-sm">
+                  {product.category === 'supplements' ? 'Flavour' : 'Size'}: <span className="font-normal text-zinc-500">{selectedSize}</span>
                 </label>
-                <div className="flex flex-wrap gap-2 sm:gap-3">
+                <div className="flex flex-wrap gap-2">
                   {product.sizes.map((size) => (
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
-                      className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all border-2 ${
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-all border ${
                         selectedSize === size
                           ? 'bg-zinc-900 text-white border-zinc-900'
-                          : 'bg-white text-zinc-900 border-zinc-200 hover:border-zinc-900'
+                          : 'bg-white text-zinc-700 border-zinc-200 hover:border-zinc-900'
                       }`}
                     >
                       {size}
@@ -314,19 +335,19 @@ export default function ProductDetailPage() {
 
             {/* Color Selection */}
             {product.colors && product.colors.length > 0 && (
-              <div className="space-y-3">
-                <label className="block text-zinc-900 font-semibold text-sm uppercase tracking-wide">
-                  Select Color
+              <div className="mt-6 space-y-3">
+                <label className="block text-zinc-900 font-semibold text-sm capitalize">
+                  Color: <span className="font-normal text-zinc-500">{selectedColor}</span>
                 </label>
-                <div className="flex flex-wrap gap-2 sm:gap-3">
+                <div className="flex flex-wrap gap-2">
                   {product.colors.map((color) => (
                     <button
                       key={color}
                       onClick={() => setSelectedColor(color)}
-                      className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all border-2 capitalize ${
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-all border capitalize ${
                         selectedColor === color
                           ? 'bg-zinc-900 text-white border-zinc-900'
-                          : 'bg-white text-zinc-900 border-zinc-200 hover:border-zinc-900'
+                          : 'bg-white text-zinc-700 border-zinc-200 hover:border-zinc-900'
                       }`}
                     >
                       {color}
@@ -336,181 +357,116 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Quantity */}
-            <div className="space-y-3">
-              <label className="block text-zinc-900 font-semibold text-sm uppercase tracking-wide">
-                Quantity
-              </label>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center bg-white border-2 border-zinc-200 rounded-lg">
-                  <button
-                    onClick={() => handleQuantityChange(-1)}
-                    className="p-3 sm:p-4 hover:bg-zinc-50 transition-colors rounded-l-lg"
-                    disabled={quantity <= 1}
-                  >
-                    <FaMinus className="text-zinc-900 text-xs sm:text-sm" />
-                  </button>
-                  <span className="px-6 sm:px-8 text-zinc-900 font-bold text-lg sm:text-xl min-w-[60px] text-center">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={() => handleQuantityChange(1)}
-                    className="p-3 sm:p-4 hover:bg-zinc-50 transition-colors rounded-r-lg"
-                  >
-                    <FaPlus className="text-zinc-900 text-xs sm:text-sm" />
-                  </button>
-                </div>
+            {/* Quantity + Add to Cart */}
+            <div className="mt-7 flex items-center gap-3">
+              <div className="flex items-center border border-zinc-200 rounded-lg shrink-0">
+                <button
+                  onClick={() => handleQuantityChange(-1)}
+                  className="p-3 hover:bg-zinc-50 transition-colors rounded-l-lg"
+                  disabled={quantity <= 1}
+                  aria-label="Decrease quantity"
+                >
+                  <FaMinus className="text-zinc-900 text-xs" />
+                </button>
+                <span className="px-4 text-zinc-900 font-semibold min-w-[40px] text-center">
+                  {quantity}
+                </span>
+                <button
+                  onClick={() => handleQuantityChange(1)}
+                  className="p-3 hover:bg-zinc-50 transition-colors rounded-r-lg"
+                  aria-label="Increase quantity"
+                >
+                  <FaPlus className="text-zinc-900 text-xs" />
+                </button>
               </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <button
                 onClick={handleAddToCart}
                 disabled={!product.inStock}
-                className="flex-1 flex items-center justify-center gap-2 sm:gap-3 bg-zinc-900 text-white py-3.5 sm:py-4 px-6 rounded-xl hover:bg-zinc-800 font-semibold text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-zinc-900 transition-all shadow-lg shadow-zinc-900/20"
+                className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 text-white py-3.5 rounded-lg hover:bg-zinc-800 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                <FaShoppingCart className="text-base sm:text-lg" />
+                <FaShoppingCart className="text-base" />
                 <span>Add to Cart</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Product Details Tabs */}
-        <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm">
-          {/* Tab Headers */}
-          <div className="flex border-b border-zinc-200 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab('description')}
-              className={`flex-1 min-w-[120px] py-4 sm:py-5 px-4 sm:px-6 font-semibold text-sm sm:text-base transition-colors relative ${
-                activeTab === 'description'
-                  ? 'text-zinc-900 bg-zinc-50'
-                  : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
-              }`}
-            >
-              Description
-              {activeTab === 'description' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-900" />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('details')}
-              className={`flex-1 min-w-[120px] py-4 sm:py-5 px-4 sm:px-6 font-semibold text-sm sm:text-base transition-colors relative ${
-                activeTab === 'details'
-                  ? 'text-zinc-900 bg-zinc-50'
-                  : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
-              }`}
-            >
-              Details
-              {activeTab === 'details' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-900" />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('reviews')}
-              className={`flex-1 min-w-[120px] py-4 sm:py-5 px-4 sm:px-6 font-semibold text-sm sm:text-base transition-colors relative ${
-                activeTab === 'reviews'
-                  ? 'text-zinc-900 bg-zinc-50'
-                  : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
-              }`}
-            >
-              Reviews
-              {activeTab === 'reviews' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-900" />
-              )}
-            </button>
-          </div>
-
-          {/* Tab Content */}
-          <div className="p-6 sm:p-8 lg:p-10">
-            {activeTab === 'description' && (
-              <div className="space-y-6 max-w-4xl">
-                <div className="prose prose-zinc max-w-none">
-                  <p className="text-zinc-700 text-base sm:text-lg leading-relaxed">{product.description}</p>
-                </div>
-                {product.features && product.features.length > 0 && (
-                  <div className="space-y-4 pt-6 border-t border-zinc-200">
-                    <h3 className="text-zinc-900 font-bold text-lg sm:text-xl">Key Features & Details</h3>
-                    <ul className="space-y-4">
-                      {product.features.map((feature, index) => (
-                        <li key={index} className="flex items-start gap-3">
-                          <FaCheckCircle className="text-green-600 mt-1 flex-shrink-0 text-sm sm:text-base" />
-                          <span className="whitespace-pre-wrap text-zinc-700 text-sm sm:text-base leading-relaxed">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
+        {/* Accordion sections */}
+        <div className="max-w-3xl">
+          <AccordionSection
+            title="Description"
+            isOpen={openSection === 'description'}
+            onToggle={() => toggleSection('description')}
+          >
+            <p className="text-zinc-600 leading-relaxed">{product.description}</p>
+            {product.features && product.features.length > 0 && (
+              <ul className="mt-5 space-y-3">
+                {product.features.map((feature, index) => (
+                  <li key={index} className="flex items-start gap-2.5">
+                    <FaCheckCircle className="text-zinc-400 mt-1 shrink-0 text-xs" />
+                    <span className="whitespace-pre-wrap text-zinc-600 text-sm leading-relaxed">{feature}</span>
+                  </li>
+                ))}
+              </ul>
             )}
+          </AccordionSection>
 
-            {activeTab === 'details' && (
-              <div className="space-y-5 max-w-2xl">
-                {product.category === 'supplements' && product.servings && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-3 border-b border-zinc-100">
-                    <strong className="text-zinc-900 font-semibold min-w-[140px] text-sm sm:text-base">Servings:</strong>
-                    <span className="text-zinc-700 text-sm sm:text-base">{product.servings}</span>
-                  </div>
-                )}
-                {product.category !== 'supplements' && product.material && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-3 border-b border-zinc-100">
-                    <strong className="text-zinc-900 font-semibold min-w-[140px] text-sm sm:text-base">Material:</strong>
-                    <span className="text-zinc-700 text-sm sm:text-base">{product.material}</span>
-                  </div>
-                )}
-                {product.category !== 'supplements' && product.care && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-3 border-b border-zinc-100">
-                    <strong className="text-zinc-900 font-semibold min-w-[140px] text-sm sm:text-base">Care Instructions:</strong>
-                    <span className="text-zinc-700 text-sm sm:text-base">{product.care}</span>
-                  </div>
-                )}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-3 border-b border-zinc-100">
-                  <strong className="text-zinc-900 font-semibold min-w-[140px] text-sm sm:text-base">Category:</strong>
-                  <span className="text-zinc-700 text-sm sm:text-base capitalize">{product.category}</span>
+          <AccordionSection
+            title="Details"
+            isOpen={openSection === 'details'}
+            onToggle={() => toggleSection('details')}
+          >
+            <div className="space-y-3 text-sm">
+              {product.category === 'supplements' && product.servings && (
+                <div className="flex gap-2">
+                  <span className="text-zinc-400 min-w-[120px]">Servings</span>
+                  <span className="text-zinc-700">{product.servings}</span>
                 </div>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-3 border-b border-zinc-100">
-                  <strong className="text-zinc-900 font-semibold min-w-[140px] text-sm sm:text-base">Availability:</strong>
-                  {product.inStock ? (
-                    <span className="flex items-center gap-2 text-green-600 font-medium text-sm sm:text-base">
-                      <FaCheckCircle /> In Stock
-                    </span>
-                  ) : (
-                    <span className="text-red-600 font-medium text-sm sm:text-base">Out of Stock</span>
-                  )}
+              )}
+              {product.category !== 'supplements' && product.material && (
+                <div className="flex gap-2">
+                  <span className="text-zinc-400 min-w-[120px]">Material</span>
+                  <span className="text-zinc-700">{product.material}</span>
                 </div>
-                {product.category === 'supplements' && product.sizes && product.sizes.length > 0 && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-3">
-                    <strong className="text-zinc-900 font-semibold min-w-[140px] text-sm sm:text-base">Available Flavours:</strong>
-                    <span className="text-zinc-700 text-sm sm:text-base">{product.sizes.join(', ')}</span>
-                  </div>
-                )}
-                {product.category !== 'supplements' && product.sizes && product.sizes.length > 0 && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-3 border-b border-zinc-100">
-                    <strong className="text-zinc-900 font-semibold min-w-[140px] text-sm sm:text-base">Available Sizes:</strong>
-                    <span className="text-zinc-700 text-sm sm:text-base">{product.sizes.join(', ')}</span>
-                  </div>
-                )}
-                {product.category !== 'supplements' && product.colors && product.colors.length > 0 && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-3">
-                    <strong className="text-zinc-900 font-semibold min-w-[140px] text-sm sm:text-base">Available Colors:</strong>
-                    <span className="text-zinc-700 text-sm sm:text-base capitalize">{product.colors.join(', ')}</span>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+              {product.category !== 'supplements' && product.care && (
+                <div className="flex gap-2">
+                  <span className="text-zinc-400 min-w-[120px]">Care</span>
+                  <span className="text-zinc-700">{product.care}</span>
+                </div>
+              )}
+              {product.sizes && product.sizes.length > 0 && (
+                <div className="flex gap-2">
+                  <span className="text-zinc-400 min-w-[120px]">
+                    {product.category === 'supplements' ? 'Flavours' : 'Sizes'}
+                  </span>
+                  <span className="text-zinc-700">{product.sizes.join(', ')}</span>
+                </div>
+              )}
+              {product.category !== 'supplements' && product.colors && product.colors.length > 0 && (
+                <div className="flex gap-2">
+                  <span className="text-zinc-400 min-w-[120px]">Colors</span>
+                  <span className="text-zinc-700 capitalize">{product.colors.join(', ')}</span>
+                </div>
+              )}
+            </div>
+          </AccordionSection>
 
-            {activeTab === 'reviews' && (
-              <ProductReviews 
-                productId={product._id || product.id || params.id as string} 
-                productName={product.name}
-              />
-            )}
-          </div>
+          <AccordionSection
+            title="Reviews"
+            isOpen={openSection === 'reviews'}
+            onToggle={() => toggleSection('reviews')}
+          >
+            <ProductReviews
+              productId={product._id || product.id || params.id as string}
+              productName={product.name}
+            />
+          </AccordionSection>
         </div>
 
         {/* Related Products */}
-        <div className="mt-12 lg:mt-16">
+        <div className="mt-14 lg:mt-20">
           <RelatedProducts productId={params.id as string} limit={6} />
         </div>
       </div>

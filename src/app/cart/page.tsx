@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
 import Link from 'next/link'
@@ -11,161 +10,134 @@ export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart, totalItems, totalPrice, totalShipping } = useCart()
   const router = useRouter()
 
-  // Force re-render when page becomes visible
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // Trigger a state update to force re-render
-        window.dispatchEvent(new Event('cartUpdate'))
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [])
-
-  // Debug: log cart summary
-  useEffect(() => {
-    console.log('Cart Summary:', {
-      totalItems,
-      totalPrice,
-      totalShipping,
-      items: items.map(i => ({ name: i.name, shippingType: i.shippingType, shippingAmount: i.shippingAmount }))
-    })
-  }, [totalItems, totalPrice, totalShipping, items])
-
   const handleCheckout = () => {
     router.push('/checkout')
   }
 
   return (
-    <div className="min-h-screen bg-white pt-20 sm:pt-28 pb-8 sm:pb-12">
+    <div className="min-h-screen bg-white pt-10 sm:pt-14 pb-12 sm:pb-16">
       <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold mb-2 text-black">Shopping Cart</h1>
-          <p className="text-gray-600">
+        <div className="mb-8 sm:mb-10">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold mb-2 text-zinc-900">Shopping Cart</h1>
+          <p className="text-zinc-500 text-sm">
             {totalItems === 0 ? 'Your cart is empty' : `${totalItems} item${totalItems === 1 ? '' : 's'} in your cart`}
           </p>
         </div>
 
         {items.length === 0 ? (
           /* Empty Cart */
-          <div className="bg-white border border-gray-300 shadow-sm rounded-lg p-6 sm:p-8 text-center py-12 sm:py-16">
-            <FaShoppingBag className="w-16 h-16 sm:w-20 sm:h-20 text-gray-300 mx-auto mb-4 sm:mb-6" />
-            <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-black">Your cart is empty</h2>
-            <p className="text-gray-600 mb-6 sm:mb-8">Add some products to get started!</p>
-            <Link href="/shop" className="inline-block px-6 py-3 bg-black text-white rounded-lg font-semibold hover:bg-gray-900 transition-colors">
+          <div className="text-center py-16 sm:py-20">
+            <FaShoppingBag className="w-10 h-10 text-zinc-300 mx-auto mb-4" />
+            <h2 className="font-display text-xl font-bold mb-2 text-zinc-900">Your cart is empty</h2>
+            <p className="text-zinc-500 text-sm mb-6">Add some products to get started!</p>
+            <Link href="/shop" className="inline-block px-6 py-3 bg-zinc-900 text-white rounded-lg font-semibold text-sm hover:bg-zinc-800 transition-colors">
               Browse Shop
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Cart Items */}
-            <div className="lg:col-span-2 space-y-3 sm:space-y-4">
+            <div className="lg:col-span-2 divide-y divide-zinc-100">
               {items.map((item, index) => (
                 <motion.div
                   key={`${item.id}-${item.size}-${item.color || ''}`}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white border border-gray-300 shadow-sm rounded-lg p-4 sm:p-6"
+                  transition={{ delay: index * 0.05 }}
+                  className="py-5 first:pt-0"
                 >
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    {/* Product Image */}
+                  <div className="flex gap-4">
                     <img
                       src={item.image || '/placeholder.png'}
                       alt={item.name}
-                      className="w-full sm:w-24 h-32 sm:h-24 object-cover rounded-lg border border-gray-200"
+                      className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg bg-zinc-50 shrink-0"
                     />
 
-                    {/* Product Details */}
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg mb-1 text-black">{item.name}</h3>
-                      <p className="text-sm text-gray-600 mb-2">Size: {item.size}</p>
-                      {item.color && (
-                        <p className="text-sm text-gray-600 mb-2">Color: {item.color}</p>
-                      )}
-                      <p className="text-black font-bold">LKR {item.price.toLocaleString()}</p>
-                    </div>
-
-                    {/* Quantity Controls */}
-                    <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-between gap-2">
-                      <button
-                        onClick={() => removeItem(item.id, item.size, item.color)}
-                        className="text-blue-600 hover:text-blue-700 transition-colors p-2 order-last sm:order-first"
-                        title="Remove item"
-                      >
-                        <FaTrash />
-                      </button>
-
-                      <div className="flex items-center gap-2 bg-gray-100 border border-gray-300 rounded-lg px-2 py-1">
-                        <button
-                          onClick={() => updateQuantity(item.id, item.size, item.quantity - 1, item.color)}
-                          className="text-black hover:text-gray-700 transition-colors p-1"
-                          disabled={item.quantity <= 1}
-                        >
-                          <FaMinus className="w-3 h-3" />
-                        </button>
-                        <span className="font-bold w-8 text-center text-black">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.id, item.size, item.quantity + 1, item.color)}
-                          className="text-black hover:text-gray-700 transition-colors p-1"
-                        >
-                          <FaPlus className="w-3 h-3" />
-                        </button>
+                    <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-zinc-900 mb-1 truncate">{item.name}</h3>
+                        <p className="text-xs text-zinc-500">
+                          Size: {item.size}{item.color ? ` · Color: ${item.color}` : ''}
+                        </p>
+                        <p className="text-zinc-900 font-semibold mt-1.5 sm:hidden">LKR {item.price.toLocaleString()}</p>
                       </div>
 
-                      <p className="font-bold text-lg text-black">
-                        LKR {(item.price * item.quantity).toLocaleString()}
-                      </p>
+                      <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
+                        <div className="flex items-center border border-zinc-200 rounded-lg">
+                          <button
+                            onClick={() => updateQuantity(item.id, item.size, item.quantity - 1, item.color)}
+                            className="p-2 text-zinc-900 hover:bg-zinc-50 transition-colors rounded-l-lg"
+                            disabled={item.quantity <= 1}
+                            aria-label="Decrease quantity"
+                          >
+                            <FaMinus className="w-2.5 h-2.5" />
+                          </button>
+                          <span className="font-semibold w-8 text-center text-sm text-zinc-900">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.id, item.size, item.quantity + 1, item.color)}
+                            className="p-2 text-zinc-900 hover:bg-zinc-50 transition-colors rounded-r-lg"
+                            aria-label="Increase quantity"
+                          >
+                            <FaPlus className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+
+                        <p className="hidden sm:block font-semibold text-zinc-900 min-w-[90px] text-right">
+                          LKR {(item.price * item.quantity).toLocaleString()}
+                        </p>
+
+                        <button
+                          onClick={() => removeItem(item.id, item.size, item.color)}
+                          className="text-zinc-400 hover:text-red-600 transition-colors p-1"
+                          aria-label="Remove item"
+                        >
+                          <FaTrash className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
               ))}
 
-              {/* Clear Cart Button */}
               <button
                 onClick={clearCart}
-                className="w-full py-3 px-6 bg-red-500 text-white hover:bg-red-600 rounded-lg font-semibold transition-colors border-none"
+                className="mt-5 text-sm text-zinc-400 hover:text-red-600 transition-colors"
               >
-                Clear Cart
+                Clear cart
               </button>
             </div>
 
             {/* Order Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-white border border-gray-300 shadow-sm rounded-lg p-4 sm:p-6 sticky top-20 sm:top-28">
-                <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-black">Order Summary</h2>
+              <div className="bg-zinc-50 rounded-2xl p-6 sticky top-24">
+                <h2 className="font-display text-lg font-bold mb-4 text-zinc-900">Order Summary</h2>
 
-                <div className="space-y-3 mb-6">
-                  <div className="flex justify-between text-gray-600">
+                <div className="space-y-2.5 mb-6 text-sm">
+                  <div className="flex justify-between text-zinc-600">
                     <span>Subtotal ({totalItems} items)</span>
                     <span>LKR {totalPrice.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-gray-600">
+                  <div className="flex justify-between text-zinc-600">
                     <span>Shipping</span>
                     <span>{totalShipping === 0 ? 'FREE' : `LKR ${totalShipping.toLocaleString()}`}</span>
                   </div>
-                  <div className="border-t border-gray-200 pt-3">
-                    <div className="flex justify-between text-xl font-bold text-black">
-                      <span>Total</span>
-                      <span className="text-black">
-                        LKR {(totalPrice + totalShipping).toLocaleString()}
-                      </span>
-                    </div>
+                  <div className="flex justify-between text-base font-bold text-zinc-900 pt-2.5 border-t border-zinc-200">
+                    <span>Total</span>
+                    <span>LKR {(totalPrice + totalShipping).toLocaleString()}</span>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <button
                     onClick={handleCheckout}
-                    className="w-full py-3 px-6 bg-black text-white rounded-lg font-semibold hover:bg-gray-900 transition-colors"
+                    className="w-full py-3.5 text-sm bg-zinc-900 text-white rounded-lg font-semibold hover:bg-zinc-800 transition-colors"
                   >
                     Proceed to Checkout
                   </button>
                   <Link
                     href="/shop"
-                    className="block w-full text-center py-3 px-6 border-2 border-black text-black hover:bg-gray-50 rounded-lg font-semibold transition-colors"
+                    className="block w-full text-center py-3.5 text-sm border border-zinc-200 text-zinc-900 hover:bg-white rounded-lg font-semibold transition-colors"
                   >
                     Continue Shopping
                   </Link>

@@ -64,7 +64,7 @@ export default function TermsPage() {
               fees, to your chosen payment method.
             </li>
             <li>
-              We use trusted third-party payment processors (PayHere) to handle your payment
+              We use trusted third-party payment processors (Payments.lk) to handle your payment
               information securely. We do not store or have access to your full payment details.
             </li>
             <li>Payment can be made via credit/debit card or cash on delivery (COD) where available.</li>

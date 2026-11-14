@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -80,6 +80,7 @@ function AccordionSection({
 
 export default function ProductDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const { addItem } = useCart()
 
   const [product, setProduct] = useState<Product | null>(null)
@@ -134,6 +135,24 @@ export default function ProductDetailPage() {
     })
 
     alert(`Added ${quantity} ${product.name} to cart!`)
+  }
+
+  const handleBuyNow = () => {
+    if (!product) return
+
+    sessionStorage.setItem('buyNowItem', JSON.stringify({
+      id: product._id || product.id || '',
+      name: product.name,
+      price: product.price,
+      quantity: quantity,
+      size: selectedSize,
+      color: selectedColor,
+      image: product.image,
+      shippingType: product.shippingType || 'free',
+      shippingAmount: product.shippingAmount || 0,
+    }))
+
+    router.push('/checkout?buyNow=1')
   }
 
   const handleQuantityChange = (delta: number) => {
@@ -357,7 +376,7 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Quantity + Add to Cart */}
+            {/* Quantity */}
             <div className="mt-7 flex items-center gap-3">
               <div className="flex items-center border border-zinc-200 rounded-lg shrink-0">
                 <button
@@ -379,14 +398,24 @@ export default function ProductDetailPage() {
                   <FaPlus className="text-zinc-900 text-xs" />
                 </button>
               </div>
+            </div>
 
+            {/* Add to Cart / Buy Now */}
+            <div className="mt-3 flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleAddToCart}
                 disabled={!product.inStock}
-                className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 text-white py-3.5 rounded-lg hover:bg-zinc-800 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 bg-white text-zinc-900 border border-zinc-900 py-3.5 rounded-lg hover:bg-zinc-50 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <FaShoppingCart className="text-base" />
                 <span>Add to Cart</span>
+              </button>
+              <button
+                onClick={handleBuyNow}
+                disabled={!product.inStock}
+                className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 text-white py-3.5 rounded-lg hover:bg-zinc-800 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <span>Buy It Now</span>
               </button>
             </div>
           </div>

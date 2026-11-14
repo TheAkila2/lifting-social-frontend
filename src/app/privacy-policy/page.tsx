@@ -28,7 +28,7 @@ export default function PrivacyPolicyPage() {
             <li>
               Payment and billing information necessary to process your orders, including
               credit card details, which are securely handled by trusted third-party payment
-              processors (PayHere).
+              processors (Payments.lk).
             </li>
             <li>
               Shipping and delivery addresses for order fulfillment.
@@ -72,7 +72,7 @@ export default function PrivacyPolicyPage() {
           <ul className="list-disc list-outside ml-5 sm:ml-6 text-sm sm:text-base text-gray-700 mb-4 sm:mb-6 space-y-1.5 sm:space-y-2">
             <li>
               <strong>Trusted service providers:</strong> We may share your information with third-party
-              service providers who assist us in operating our website, processing payments (PayHere), and
+              service providers who assist us in operating our website, processing payments (Payments.lk), and
               delivering products. These providers are contractually obligated to handle your
               data securely and confidentially.
             </li>
@@ -90,7 +90,7 @@ export default function PrivacyPolicyPage() {
           </p>
           <ul className="list-disc list-outside ml-5 sm:ml-6 text-sm sm:text-base text-gray-700 mb-4 sm:mb-6 space-y-1.5 sm:space-y-2">
             <li>SSL/TLS encryption for data transmission</li>
-            <li>Secure payment processing through PayHere</li>
+            <li>Secure payment processing through Payments.lk</li>
             <li>Password hashing and encryption</li>
             <li>Regular security audits and updates</li>
           </ul>
